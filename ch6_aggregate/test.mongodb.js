@@ -36,14 +36,14 @@ db.rating.aggregate([
   },
 ]);
 
-//
+//hi: "new field" : db에 저장되진 않음 -> 결과값에만 추가해준것
 db.rating.aggregate([
   {
     $project: { _id: 0, rating: 1, hi: "new field" },
   },
 ]);
 
-//
+//예시
 db.rating.aggregate([
   {
     //multiply 새 필드를 추가함.
@@ -122,6 +122,7 @@ db.rating.aggregate([
     },
   },
   {
+    // 배열의 요소들을 문서로 변환
     $unwind: "$user_ids",
   }, // 3번째 스테이지 , unwind 확인.
 ]);
@@ -142,6 +143,7 @@ db.rating.aggregate([
 ]);
 db.user_ids_by_rating.find();
 
+
 // limit , sort,  skip ,
 db.rating.aggregate([
   {
@@ -153,9 +155,11 @@ db.rating.aggregate([
     $limit: 5, // 순서2
   },
   {
+    //1개 건너뛰기
     $skip: 1, // 순서3
   },
 ]);
+
 
 // 고급 스테이지 소개.
 // $bucket
@@ -174,6 +178,7 @@ db.rating.aggregate([
 ]);
 
 //고급 스테이지 , $facet -> 배열로 만들기, $bucketAuto , 자동 등분 나누기.
+//파이프라인의 출력값을 배열의 형태로 저장.
 db.rating.aggregate([
   {
     $facet: {
@@ -185,7 +190,7 @@ db.rating.aggregate([
   },
 ]);
 
-//$lookup
+//$lookup ->RDBMS의 JOIN과 비슷
 db.by_month.aggregate([
   {
     $lookup: {
