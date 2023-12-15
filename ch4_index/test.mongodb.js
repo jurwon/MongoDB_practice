@@ -4,9 +4,11 @@ db.stores.getIndexes()
 //특징 : 대소문자 엄격히 구분, 순서 중요, 너무 많은 인덱스 사용시 역효과
 
 db.employees.getIndexes() 
-// Single-key 인덱스
+
+// Single-key 인덱스 만들기
 db.employees.createIndex({empno:1})
 db.employees.createIndex({empno:1, deptno:-1}) 
+
 // # Compound 인덱스
 // 인덱스 설정 조회
 db.employees.getIndexes()
@@ -16,12 +18,27 @@ db.employees.find({deptno:10}).pretty()
 
 // empno : 검색 explain 확인.
 // 인덱스 설정
+db.employees.find({empno:101}).explain()
+
+// 인덱스 설정 아직 안함. -> COLLSCAN
 db.employees.find({deptno:10}).explain()
 
-// 인덱스 설정 아직 안함.
+// 인덱스 설정 후 확인 ->IXSCAN
+db.employees.find({deptno:10}).explain()
+
+
 db.employees.find({deptno:10}).sort({empno:-1})
 db.employees.find({deptno:10}).sort({empno:-1}).explain()
+
+db.employees.find({empno:101}).sort({deptno:-1}).explain()
 db.employees.dropIndex({empno:1})
+db.employees.dropIndex({deptno:1})
+
+//삭제 후 확인
+db.employees.getIndexes() 
+
+//deptno조회시, 인덱스로 검색 안하는 부분 확인
+db.employees.find({deptno:10}).explain()
 
 
 //샘플 코드
@@ -107,6 +124,103 @@ db.employees.insertMany([
       comm: 1600,
     },
   ]);
+
+
+
+//좌표 관련 인덱스 이용해서 검색해보기
+db.users.insertOne({ x: 1 });
+
+// GeoSpatial INDEX
+for (var i = 0; i < 100; i++) {
+  db.spatial.insert({ pos: [i % 10, Math.floor(i / 10)] });
+}
+
+//인덱스 설정
+db.spatial.ensureIndex({ pos: "2d" });
+//{ pos: { $near: [5, 5] } : query, { _id: 0 }: projection, limit(5): 페이징
+db.spatial.find({ pos: { $near: [5, 5] } }, { _id: 0 }).limit(5);
+db.spatial.find({ pos: { $near: [5, 5] } }, { _id: 0 }).limit(5).explain();
+
+db.spatial
+  .find({ pos: { $near: [5, 5] } }, { _id: 0 })
+  .limit(5)
+  .explain();
+
+//CENTER
+db.spatial.find({ pos: { $within: { $center: [[5, 5], 2] } } }, { _id: 0 });
+
+//BOX
+db.spatial.find(
+  {
+    pos: {
+      $within: {
+        $box: [
+          [5, 5],
+          [6, 6],
+        ],
+      },
+    },
+  },
+  { _id: 0 }
+);
+
+//POLYGON
+db.spatial.find(
+  {
+    pos: {
+      $within: {
+        $polygon: [
+          [3, 4],
+          [5, 7],
+          [7, 4],
+        ],
+      },
+    },
+  },
+  { _id: 0 }
+);
+
+//Multi-Location Documents 검색 예:
+db.tel_pos.insert({
+  mobile_no: "01038631858",
+  last_pos: [
+    [127.0945116, 37.535397],
+    [126.9815316, 37.5685375],
+    [127.0305035, 37.5017141],
+  ],
+});
+db.tel_pos.insert({
+  mobile_no: "01075993678",
+  last_pos: [
+    [127.1353452, 37.4576521],
+    [127.1359081, 37.4512311],
+    [125.7823091, 36.3339801],
+  ],
+});
+db.tel_pos.insert({
+  mobile_no: "01071229021",
+  last_pos: [
+    [126.3411234, 36.1098761],
+    [124.3410922, 37.3409901],
+    [127.2223331, 37.091209],
+  ],
+});
+
+//인덱스
+db.tel_pos.ensureIndex({ last_pos: "2d" });
+
+//find
+db.tel_pos
+  .find(
+    {
+      last_pos: {
+        $within: { $centerSphere: [[127.0352915, 37.5360206], 30 / 3963] },
+      },
+    },
+    { _id: 0, mobile_no: 1, last_pos: 1 }
+  )
+  .pretty();
+
 
 
 
