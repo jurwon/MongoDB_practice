@@ -1,0 +1,127 @@
+SCRAM 인증
+유저 이름과 패스워드로 인증하는 방법.
+유저 암호는 SHA-256 해싱처리와 솔팅 처리를 한다.
+
+x.509 CA
+클라이언트 접속과 내부 접속 (복제 세트나 샤드 클러스터와 같은 )을
+위해 사용하는 방식.
+CA(Certificate Authority)로 부터 인증서를 발급받아 인증.
+
+엔터프라이즈에서
+LDAP  인증.
+켈베로스 인증 (Kerberos) 인증
+
+SCRAM-SHA-1 -> MongoDB 4.0 이후로 -> SCRAM-SHA-256
+
+
+4.2.24
+ net stop mongodb
+ net start mongodb
+
+mongo
+
+먼저, mongod 인스턴스 설정 파일을 변경.
+
+리눅스: /etc/mongod.conf
+
+윈도우 : 설치된 디레톡리/bin/mongod.cfg
+
+맥 : /usr/local/etc/mongod.conf
+
+설정 1
+
+security:
+authorization : enabled
+
+설정 2
+서버에 접속해서 관리자 사용자 추가.
+-mongod
+-mongo
+
+
+use admin
+db.createUser({
+user: "root",
+pwd: "1234",
+roles: ["root"]
+})
+
+설정 3
+서비스 재시작
+
+윈도우
+관리자 cmd 창
+net stop mongodb
+net start mongodb
+
+리눅스
+systemctl restart mongod
+service restart mongod
+
+맥
+brew services restart mongodb
+
+설정 4
+MongoDB 셸에 접속 후 어떤 명령어도 에러 발생.
+show dbs
+
+설정 5
+셸 접속 할 때마다 로그인 과정 필요.
+use admin
+db.auth("root","1234)
+후,
+1이 반환 되면 로그인 됨.
+주의,
+로그인 할 때 유저를 생성한 데이터베이스에 들어가서 해야함.
+꼭 admin 데이터베이스에 접속 로그인.
+
+설정 6
+다른 데이터베이스에 설정.
+use testDB
+ db.createUser({user: "developer", pwd:"developer", roles:["readWrite"]});
+
+
+
+
+role 의 기본값은 "read", "readWrite" 를 가질수 있다.
+
+추가 권한 공식 문서 참고.
+
+설정 7
+패스워드 변경.
+db.chageUserPassword("사용자명", "변경할 비밀번호")
+
+설정 8
+유저 조회
+db.getUsers()
+
+특정 유저 조회
+db.getUsers({filter: {user:"test1"}})
+
+설정 9
+특정 유저 삭제
+db.dropUser("test1")
+
+설정 10
+로그 아웃
+db.logout()
+
+
+설정 11
+인증을 사용해서 몽고 실행 하겠다.
+
+mongod --auth
+
+셀 종료후 , 다시 시행
+mongo admin -u root -p 1234
+ mongo -u root -p 1234
+
+
+설정 12
+연결 코드
+mongodb://아이디:비밀번호@호스트:포트/admin', { dbName: '사용할 데이터베이스' }
+
+mongo -u developer -p developer public_ip:27017/chatbot_service
+mongo -u root -p 1234 logcalhost:27018/chatbot_service
+
+mongodb://root:1234@localhost:27017/?authMechanism=DEFAULT&authSource=testDB
